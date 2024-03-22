@@ -1,2 +1,2 @@
-data <- read.csv("appstore_games.csv")
+Data <- read.csv("appstore_games.csv")
 #hi there
