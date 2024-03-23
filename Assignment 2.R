@@ -1,2 +1,3 @@
-Data <- read.csv("appstore_games.csv")
-#hi there
+library(readr)
+appstore_games <- read.csv("Downloads/appstore_games.csv")
+appstore_games <- data.frame(appstore_games)
