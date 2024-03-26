@@ -2,7 +2,7 @@
 library(readr)
 appstore_games <- read.csv("appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
-
+sum(is.na(appstore_games$User.Rating.Count))
 #Task 2: Data Cleaning
 library(dplyr)
 data<-appstore_games
@@ -49,7 +49,9 @@ for(d in 1:nrow(clean_df)) {
 clean_df$IAP_sum <- sapply(clean_df$In.app.Purchases,FUN =sum)
 clean_df$IAP_average <- sapply(clean_df$In.app.Purchases, FUN = function(x) round(mean(x), 2)) #Yasin - I changed it to two decimals
 
-
+#checking for NA and infinite values in Description
+sum(is.na(clean_df$Description))
+sum(is.infinite(clean_df$Desciption))
 #adding a description count and removing the description column 
 clean_df$Description_count <- sapply(strsplit(clean_df$Description, " "),FUN = length)
 clean_df <- subset(clean_df, select=-Description)
@@ -72,7 +74,7 @@ clean_df$age_rating<-ifelse(clean_df$Age.Rating=="4+","4+","9+")
 
 
 clean_df$Languages<-strsplit(clean_df$Languages, ",")
-clean_df$languages_count <- rep(NA, nrow(clean_df))
+
 
 for(x in 1:nrow(clean_df)) {
   lang_length <- length(clean_df$Languages[[x]])
@@ -90,16 +92,16 @@ clean_df$is_available_in_english <- "No"
 
 #Note: we refer to another column for NAs
 for(y in 1:nrow(clean_df)){
-  
   if(is.na(clean_df$languages_count[[y]])){
-    clean_df$is_available_in_english[y] <- "NA"
-  } else if("EN" %in% clean_df$Languages[[y]]){ #Yasin - I changed it so it still reads all EN-values
+    clean_df$is_available_in_english[y] <- NA
+  } else if("EN" %in% clean_df$Languages[[y]]){ 
     clean_df$is_available_in_english[y] <- "Yes"
   }
 }
 
 #load the extra df
-load("genres_df.Rda") #Yasin - I changed the file path so everyone could access it easily
+load("genres_df.Rda") 
+
 
 #create a table with totals for each ID 
 Genres_ID <- table(Genres_df$ID)
@@ -132,7 +134,7 @@ for (e in 1:nrow(Genres_df)) {
 
 clean_df$Current.Version.Release.Date <- as.Date(clean_df$Current.Version.Release.Date, format = "%d/%m/%Y")
 clean_df$Elapsed_months<- as.numeric(difftime(Sys.Date(),clean_df$Current.Version.Release.Date,units="days"))/30 #Yasin - I changed the name of the column to Elapsed_months and adjusted the code to have it return the correct number of months
-clean_df$Release_month<- months(as.Date(clean_df$Original.Release.Date))
+clean_df$Release_month<- months(as.Date(clean_df$Original.Release.Date)) #Andrea - Consider rounding the elapsed months
 
 #free/non-free app
 clean_df$game_free <- ifelse(is.na(clean_df$In.app.Purchases),1,0)
@@ -141,3 +143,83 @@ clean_df$game_free <- ifelse(is.na(clean_df$In.app.Purchases),1,0)
 median_rating <- median(clean_df$User.Rating.Count, na.rm = TRUE)
 
 clean_df$Categorical.Rating.Count <- ifelse(clean_df$User.Rating.Count < median_rating, "Low", "High")
+
+####    TASK 3: Missing Values formatting ####
+
+clean_df_copy <- clean_df
+#From the paper, it is possible to read that games which show NA User.Rating.Count have not reached 5 total rating 
+#Replacing NA User.Rating.Count with 5
+
+clean_df_copy$User.Rating.Count <- ifelse(
+  is.na(clean_df_copy$User.Rating.Count) , 5, clean_df_copy$User.Rating.Count
+  )
+
+#Replacing NA Average.User.rating with 0 
+clean_df_copy$Average.User.Rating <- ifelse(
+  is.na(clean_df_copy$Average.User.Rating) , 0, clean_df_copy$Average.User.Rating
+  )
+
+#Handling NA Price values 
+sum(is.na(clean_df_copy$Price))
+
+#Removing observations where Price is NA
+clean_df_copy <- clean_df_copy%>% 
+  filter (!is.na(Price))
+
+#Replacing NA in-app-purchases with 0 
+clean_df_copy$In.app.Purchases <- ifelse(
+  is.na(clean_df_copy$In.app.Purchases) , 0, clean_df_copy$In.app.Purchases
+  )
+#Handling missing languages
+
+clean_df_copy$Languages <- gsub(0, "EN", clean_df_copy$Languages) #to double check
+sum(clean_df_copy$Languages == 'EN')
+#Handling NA size values 
+sum(is.na(clean_df_copy$Size)) # No NA values, probably filtered together with price
+
+#Converting IAP NA values measurements in 0 
+columns_to_replace <- c("IAP_min", "IAP_max","IAP_sum","IAP_average")
+clean_df_copy[,columns_to_replace][is.na(clean_df_copy[,columns_to_replace])] <- 0
+
+#Dropping observations with NA categorical variables 
+clean_df_copy <- clean_df_copy%>% 
+  filter (!is.na(languages_count))
+
+clean_df_copy <- clean_df_copy%>% 
+  filter (!is.na(is_available_in_english))
+#Re-running rating median calculation after data imputation
+median_rating <- median(clean_df_copy$User.Rating.Count, na.rm = TRUE)
+
+clean_df_copy$Categorical.Rating.Count <- ifelse(clean_df_copy$User.Rating.Count < median_rating, "Low", "High")
+clean_df_copy <- clean_df_copy%>% 
+  filter (!is.na(Categorical.Rating.Count))
+
+
+#Making sure that every column in either numerical or categorical 
+column_types <- sapply(clean_df_copy,class)
+numeric_columns <- which(column_types =='integer')
+clean_df_copy[, numeric_columns] <- lapply(clean_df_copy[, numeric_columns], as.numeric)
+clean_df_copy$In.app.Purchases <- sapply(clean_df_copy$In.app.Purchases, function(x) as.numeric(x))#ask about the list to the professor
+#clean_df_copy$Current.Version.Release.Date <- lapply(clean_df_copy$Current.Version.Release.Date, as.numeric)
+
+categorical_columns <- which(column_types == 'character')
+clean_df_copy[, categorical_columns] <- lapply(clean_df_copy[, categorical_columns], as.factor)
+
+str(clean_df_copy) #the datatypes are all either numeric or categorical despite for the Current.Version.Release.Date
+
+#Checking for duplicates 
+clean_df_copy <- clean_df_copy %>%
+  filter(distinct(ID))
+distinct(clean_df_copy$ID)
+
+#### TASK 4 #####
+#Splitting dataset into training and testing set 
+install.packages('caTools')
+library(caTools)
+split <- sample.split(clean_df_copy, SplitRatio = 0.8)
+
+#Creating Training and test sets 
+trainingset <- subset(clean_df_copy,split == TRUE)
+testset <- subset(clean_df_copy,split == FALSE)
+
+#### TASK 5 ####
