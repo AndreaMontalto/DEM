@@ -3,7 +3,7 @@ library(readr)
 appstore_games <- read.csv("Downloads/appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
 
-#task 2
+#Task 2: Data Cleaning
 library(dplyr)
 data<-appstore_games
 
@@ -17,7 +17,7 @@ clean_df$In.app.Purchases <- strsplit(clean_df$In.app.Purchases, ",")
 #count the number of in-app purchases per game
 clean_df$IAP_count <- sapply(clean_df$In.app.Purchases,FUN = length)
 
-#converting everythign to numeric
+#converting everything to numeric
 clean_df$In.app.Purchases <- sapply(clean_df$In.app.Purchases,as.numeric)
 
 #convert 0 into NA value
@@ -27,7 +27,7 @@ for(c in 1:nrow(clean_df)) {
   }
 }
 
-# calcularing min IAP
+#calcularing min IAP
 for(d in 1:nrow(clean_df)) {
   if (clean_df$IAP_count[d]==0) {
     clean_df$IAP_min[d] <- NA
@@ -36,7 +36,7 @@ for(d in 1:nrow(clean_df)) {
   }
 }
 
-# calculating max IAP
+#calculating max IAP
 for(d in 1:nrow(clean_df)) {
   if (clean_df$IAP_count[d]==0) {
     clean_df$IAP_max[d] <- NA
@@ -45,15 +45,16 @@ for(d in 1:nrow(clean_df)) {
   }
 }
 
-# calculating the sum and the mean IAP
+#calculating the sum and the mean IAP
 clean_df$IAP_sum <- sapply(clean_df$In.app.Purchases,FUN =sum)
-clean_df$IAP_average <- sapply(clean_df$In.app.Purchases,FUN =mean)
+clean_df$IAP_average <- sapply(clean_df$In.app.Purchases, FUN = function(x) round(mean(x), 2)) #Yasin - I changed it to two decimals
 
-# Adding a description count and removing the description column 
+
+#adding a description count and removing the description column 
 clean_df$Description_count <- sapply(strsplit(clean_df$Description, " "),FUN = length)
 clean_df <- subset(clean_df, select=-Description)
 
-# creating a table with all developers and the totla number of games they developed
+#creating a table with all developers and the total number of games they developed
 Names<-table(clean_df$Developer)
 for (developer in names(Names)) {
   if(Names[developer]>3){
@@ -63,7 +64,7 @@ for (developer in names(Names)) {
   }
 }
 
-# checking that there's nothing below 4+
+#checking that there's nothing below 4+
 table(clean_df$Age.Rating)
 
 #replacing everything 4+ with 4+, and the rest with 9+
@@ -75,7 +76,6 @@ clean_df$languages_count <- rep(NA, nrow(clean_df))
 
 for(x in 1:nrow(clean_df)) {
   lang_length <- length(clean_df$Languages[[x]])
-  
   if (lang_length == 0) {
     clean_df$languages_count[x] <- NA
   } else if (lang_length == 1) {
@@ -88,55 +88,56 @@ for(x in 1:nrow(clean_df)) {
 
 clean_df$is_available_in_english <- "No"
 
-# there's a problem with whitespaces here; remove them (preferably)
-# Note: we refer to another column for NAs
+#Note: we refer to another column for NAs
 for(y in 1:nrow(clean_df)){
   
   if(is.na(clean_df$languages_count[[y]])){
     clean_df$is_available_in_english[y] <- "NA"
-  } else if(" EN" %in% clean_df$Languages[[y]] | "EN" %in% clean_df$Languages[[y]]){
+  } else if("EN" %in% clean_df$Languages[[y]]){ #Yasin - I changed it so it still reads all EN-values
     clean_df$is_available_in_english[y] <- "Yes"
   }
 }
 
-# load the extra df
-load("/Users/arinamalcenko/Downloads/genres_df (1).Rda")
+#load the extra df
+load("Downloads/genres_df.Rda") #Yasin - I changed the file path so everyone could access it easily
 
-# create a table with totlas for each ID 
+#create a table with totals for each ID 
 Genres_ID <- table(Genres_df$ID)
-# print to check
+#print to check
 print(Genres_df$ID)
-# match the ID from the table to the df and add the total genres to the df
+#match the ID from the table to the df and add the total genres to the df
 for(ID in names(Genres_ID)) {
   clean_df$Genres_count[clean_df$ID==ID] <- Genres_ID[ID]
 }
 
-# we still have the Primary.Genres attribute which we're not using
-# it's the first genre in the normal Genres column
-# we can remove the attribute together with the other 3 in the very beginning of task 2
-# should we do it?
+#we still have the Primary.Genres attribute which we're not using
+#it's the first genre in the normal Genres column
+#we can remove the attribute together with the other 3 in the very beginning of task 2
+#should we do it?
+#Yasin - I don't think it is hindering the rest of the code, so I don't think we should remove it
 
 unique_genres <- unique(Genres_df$genre)
 print(unique_genres)
 
-# add coumns for all unique genres 
+#add coumns for all unique genres 
 for(genre in unique_genres) {
   clean_df [ ,genre] <- 0
 }
 
-# rows: match IDs from two data frames
-# columns: match the genre names in Genres_df to the column names in clean_df 
+#rows: match IDs from two data frames
+#columns: match the genre names in Genres_df to the column names in clean_df 
 for (e in 1:nrow(Genres_df)) {
   clean_df[clean_df$ID==Genres_df$ID[e],Genres_df$genre[e]] <- 1
 }
 
-clean_df$Months_since_release<-as.numeric(difftime(Sys.Date(),clean_df$Current.Version.Release.Date,units="weeks"))/4.35
+clean_df$Current.Version.Release.Date <- as.Date(clean_df$Current.Version.Release.Date, format = "%d/%m/%Y")
+clean_df$Elapsed_months<- as.numeric(difftime(Sys.Date(),clean_df$Current.Version.Release.Date,units="days"))/30 #Yasin - I changed the name of the column to Elapsed_months and adjusted the code to have it return the correct number of months
 clean_df$Release_month<- months(as.Date(clean_df$Original.Release.Date))
 
-# free/non-free app
+#free/non-free app
 clean_df$game_free <- ifelse(is.na(clean_df$In.app.Purchases),1,0)
 
-# finding a median
+#finding a median
 median_rating <- median(clean_df$User.Rating.Count, na.rm = TRUE)
 
 clean_df$Categorical.Rating.Count <- ifelse(clean_df$User.Rating.Count < median_rating, "Low", "High")
