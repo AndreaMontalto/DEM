@@ -1,6 +1,6 @@
 #Task 1: Importing
 library(readr)
-appstore_games <- read.csv("Downloads/appstore_games.csv")
+appstore_games <- read.csv("appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
 
 #Task 2: Data Cleaning
@@ -99,7 +99,7 @@ for(y in 1:nrow(clean_df)){
 }
 
 #load the extra df
-load("Downloads/genres_df.Rda") #Yasin - I changed the file path so everyone could access it easily
+load("genres_df.Rda") #Yasin - I changed the file path so everyone could access it easily
 
 #create a table with totals for each ID 
 Genres_ID <- table(Genres_df$ID)
