@@ -3,6 +3,8 @@ library(readr)
 appstore_games <- read.csv("appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
 sum(is.na(appstore_games$User.Rating.Count))
+
+
 #Task 2: Data Cleaning
 library(dplyr)
 data<-appstore_games
@@ -87,7 +89,6 @@ for(x in 1:nrow(clean_df)) {
   }
 }
 
-
 clean_df$is_available_in_english <- "No"
 
 #Note: we refer to another column for NAs
@@ -101,7 +102,6 @@ for(y in 1:nrow(clean_df)){
 
 #load the extra df
 load("genres_df.Rda") 
-
 
 #create a table with totals for each ID 
 Genres_ID <- table(Genres_df$ID)
@@ -144,6 +144,7 @@ median_rating <- median(clean_df$User.Rating.Count, na.rm = TRUE)
 
 clean_df$Categorical.Rating.Count <- ifelse(clean_df$User.Rating.Count < median_rating, "Low", "High")
 
+
 ####    TASK 3: Missing Values formatting ####
 
 clean_df_copy <- clean_df
@@ -152,34 +153,43 @@ clean_df_copy <- clean_df
 
 clean_df_copy$User.Rating.Count <- ifelse(
   is.na(clean_df_copy$User.Rating.Count) , 5, clean_df_copy$User.Rating.Count
-  )
+)
 
 #Replacing NA Average.User.rating with 0 
 clean_df_copy$Average.User.Rating <- ifelse(
   is.na(clean_df_copy$Average.User.Rating) , 0, clean_df_copy$Average.User.Rating
-  )
+)
 
 #Handling NA Price values 
 sum(is.na(clean_df_copy$Price))
 
-#Removing observations where Price is NA
-clean_df_copy <- clean_df_copy%>% 
-  filter (!is.na(Price))
+#Yasin - I changed this to replace NA values to 0, instead of removing the rows completely
+clean_df_copy <- clean_df_copy %>%
+  mutate(Price = ifelse(is.na(Price), 0, Price))
+
 
 #Replacing NA in-app-purchases with 0 
 clean_df_copy$In.app.Purchases <- ifelse(
   is.na(clean_df_copy$In.app.Purchases) , 0, clean_df_copy$In.app.Purchases
-  )
-#Handling missing languages
+)
 
-clean_df_copy$Languages <- gsub(0, "EN", clean_df_copy$Languages) #to double check
+#Handling missing languages
+clean_df_copy$Languages <- gsub(0, "EN", clean_df_copy$Languages) 
+#To double check
 sum(clean_df_copy$Languages == 'EN')
+
 #Handling NA size values 
 sum(is.na(clean_df_copy$Size)) # No NA values, probably filtered together with price
 
 #Converting IAP NA values measurements in 0 
-columns_to_replace <- c("IAP_min", "IAP_max","IAP_sum","IAP_average")
-clean_df_copy[,columns_to_replace][is.na(clean_df_copy[,columns_to_replace])] <- 0
+#Yasin - I replaced the code with an easier solution for this:
+clean_df_copy <- clean_df_copy %>%
+  mutate(
+    IAP_min = ifelse(is.na(IAP_min), 0, IAP_min),
+    IAP_max = ifelse(is.na(IAP_max), 0, IAP_max),
+    IAP_sum = ifelse(is.na(IAP_sum), 0, IAP_sum),
+    IAP_average = ifelse(is.na(IAP_average), 0, IAP_average)
+  )
 
 #Dropping observations with NA categorical variables 
 clean_df_copy <- clean_df_copy%>% 
@@ -195,7 +205,7 @@ clean_df_copy <- clean_df_copy%>%
   filter (!is.na(Categorical.Rating.Count))
 
 
-#Making sure that every column in either numerical or categorical 
+#Making sure that every column is either numerical or categorical 
 column_types <- sapply(clean_df_copy,class)
 numeric_columns <- which(column_types =='integer')
 clean_df_copy[, numeric_columns] <- lapply(clean_df_copy[, numeric_columns], as.numeric)
@@ -205,21 +215,38 @@ clean_df_copy$In.app.Purchases <- sapply(clean_df_copy$In.app.Purchases, functio
 categorical_columns <- which(column_types == 'character')
 clean_df_copy[, categorical_columns] <- lapply(clean_df_copy[, categorical_columns], as.factor)
 
-str(clean_df_copy) #the datatypes are all either numeric or categorical despite for the Current.Version.Release.Date
+#Yasin - I adjusted the following code to make it easier to understand
+column_types <- sapply(clean_df_copy, class)
+table(column_types) #the datatypes are all either numeric or categorical despite for the Current.Version.Release.Date
 
 #Checking for duplicates 
 clean_df_copy <- clean_df_copy %>%
   filter(distinct(ID))
 distinct(clean_df_copy$ID)
+#Yasin - Somehow this code doesn't work for me, therefore I changed it to this:
+clean_df_copy_unique <- unique(clean_df_copy)
+#Yasin - I'll use this new unique data frame for the following steps as well
 
-#### TASK 4 #####
+
+#### TASK 4 ####
 #Splitting dataset into training and testing set 
 install.packages('caTools')
 library(caTools)
-split <- sample.split(clean_df_copy, SplitRatio = 0.8)
+split <- sample.split(clean_df_copy_unique, SplitRatio = 0.8)
 
 #Creating Training and test sets 
-trainingset <- subset(clean_df_copy,split == TRUE)
-testset <- subset(clean_df_copy,split == FALSE)
+trainingSet <- subset(clean_df_copy_unique,split == TRUE)
+testSet <- subset(clean_df_copy_unique,split == FALSE)
+
 
 #### TASK 5 ####
+#Select numeric columns
+numeric_columns <- sapply(clean_df_copy_unique, is.numeric)
+
+#Scale numeric columns to the range [0, 1]
+clean_df_copy_unique[, numeric_columns] <- lapply(clean_df_copy_unique[, numeric_columns], function(x) {
+  (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+})
+
+
+#### TASK 6 ####
