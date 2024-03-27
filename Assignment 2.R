@@ -2,7 +2,7 @@
 library(readr)
 appstore_games <- read.csv("appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
-sum(is.na(appstore_games$User.Rating.Count))
+
 
 
 #Task 2: Data Cleaning
@@ -174,12 +174,16 @@ clean_df_copy$In.app.Purchases <- ifelse(
 )
 
 #Handling missing languages
-clean_df_copy$Languages <- gsub(0, "EN", clean_df_copy$Languages) 
+clean_df_copy <- clean_df_copy %>%
+  filter(lengths(Languages)>0)
+
+
 #To double check
 sum(clean_df_copy$Languages == 'EN')
 
 #Handling NA size values 
-sum(is.na(clean_df_copy$Size)) # No NA values, probably filtered together with price
+clean_df_copy <- clean_df_copy %>%
+  mutate(Size = ifelse(is.na(Size), 0, Size))
 
 #Converting IAP NA values measurements in 0 
 #Yasin - I replaced the code with an easier solution for this:
@@ -204,29 +208,35 @@ clean_df_copy$Categorical.Rating.Count <- ifelse(clean_df_copy$User.Rating.Count
 clean_df_copy <- clean_df_copy%>% 
   filter (!is.na(Categorical.Rating.Count))
 
+#Checking for NA values 
+sum(apply(is.na(clean_df_copy[,1:76] ), 2, sum))
 
 #Making sure that every column is either numerical or categorical 
 column_types <- sapply(clean_df_copy,class)
+column_types
+table(column_types)
 numeric_columns <- which(column_types =='integer')
 clean_df_copy[, numeric_columns] <- lapply(clean_df_copy[, numeric_columns], as.numeric)
-clean_df_copy$In.app.Purchases <- sapply(clean_df_copy$In.app.Purchases, function(x) as.numeric(x))#ask about the list to the professor
-#clean_df_copy$Current.Version.Release.Date <- lapply(clean_df_copy$Current.Version.Release.Date, as.numeric)
+  #clean_df_copy$In.app.Purchases <- sapply(clean_df_copy$In.app.Purchases, function(x) as.numeric(x))
 
-categorical_columns <- which(column_types == 'character')
-clean_df_copy[, categorical_columns] <- lapply(clean_df_copy[, categorical_columns], as.factor)
+clean_df_copy$Games <- lapply(clean_df_copy[,clean_df_copy$Games], as.factor)
+#clean_df_copy$Current.Version.Release.Date <- lapply(clean_df_copy$Current.Version.Release.Date, as.numeric)
+columns_to_categorical <- clean_df_copy[,clean_df_copy$Games: clean_df_copy$`Magazines & Newspapers`]
+categorical_columns <- which(column_types != 'numeric')
+categorical_columns
+clean_df_copy$Languages <- as.character(clean_df_copy$Languages)
+clean_df_copy$Languages <- strsplit(clean_df_copy$Languages, ",")
+clean_df_copy[, columns_to_categorical] <- lapply(clean_df_copy[, columns_to_categorical], as.factor)
 
 #Yasin - I adjusted the following code to make it easier to understand
 column_types <- sapply(clean_df_copy, class)
 table(column_types) #the datatypes are all either numeric or categorical despite for the Current.Version.Release.Date
-
+str(clean_df_copy)
 #Checking for duplicates 
-clean_df_copy <- clean_df_copy %>%
-  filter(distinct(ID))
-distinct(clean_df_copy$ID)
-#Yasin - Somehow this code doesn't work for me, therefore I changed it to this:
-clean_df_copy_unique <- unique(clean_df_copy)
-#Yasin - I'll use this new unique data frame for the following steps as well
 
+clean_df_copy_unique <- unique(clean_df_copy)
+
+sum(duplicated(clean_df_copy_unique))
 
 #### TASK 4 ####
 #Splitting dataset into training and testing set 
