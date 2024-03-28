@@ -4,7 +4,6 @@ appstore_games <- read.csv("appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
 
 
-
 #Task 2: Data Cleaning
 library(dplyr)
 data<-appstore_games
@@ -141,7 +140,7 @@ clean_df$game_free <- ifelse(is.na(clean_df$In.app.Purchases),1,0)
 
 #finding a median
 median_rating <- median(clean_df$User.Rating.Count, na.rm = TRUE)
-
+median_rating
 clean_df$Categorical.Rating.Count <- ifelse(clean_df$User.Rating.Count < median_rating, "Low", "High")
 
 
@@ -152,7 +151,7 @@ clean_df_copy <- clean_df
 #Replacing NA User.Rating.Count with 5
 
 clean_df_copy$User.Rating.Count <- ifelse(
-  is.na(clean_df_copy$User.Rating.Count) , 5, clean_df_copy$User.Rating.Count
+  is.na(clean_df_copy$User.Rating.Count) , 0, clean_df_copy$User.Rating.Count
 )
 
 #Replacing NA Average.User.rating with 0 
@@ -179,7 +178,7 @@ clean_df_copy <- clean_df_copy %>%
 
 
 #To double check
-sum(clean_df_copy$Languages == 'EN')
+sum(clean_df_copy$Languages == '0')
 
 #Handling NA size values 
 clean_df_copy <- clean_df_copy %>%
@@ -202,36 +201,73 @@ clean_df_copy <- clean_df_copy%>%
 clean_df_copy <- clean_df_copy%>% 
   filter (!is.na(is_available_in_english))
 #Re-running rating median calculation after data imputation
-median_rating <- median(clean_df_copy$User.Rating.Count, na.rm = TRUE)
-
-clean_df_copy$Categorical.Rating.Count <- ifelse(clean_df_copy$User.Rating.Count < median_rating, "Low", "High")
-clean_df_copy <- clean_df_copy%>% 
-  filter (!is.na(Categorical.Rating.Count))
+#median_rating <- median(clean_df_copy$User.Rating.Count, na.rm = TRUE)
+#edian_rating
+#clean_df_copy$Categorical.Rating.Count <- ifelse(clean_df_copy$User.Rating.Count < median_rating, "Low", "High")
+#clean_df_copy <- clean_df_copy%>% 
+  #filter (!is.na(Categorical.Rating.Count))
 
 #Checking for NA values 
 sum(apply(is.na(clean_df_copy[,1:76] ), 2, sum))
 
-#Making sure that every column is either numerical or categorical 
+
+#### Making sure that every column is either numerical or categorical ####
 column_types <- sapply(clean_df_copy,class)
 column_types
 table(column_types)
+
+#Integers to numeric
 numeric_columns <- which(column_types =='integer')
 clean_df_copy[, numeric_columns] <- lapply(clean_df_copy[, numeric_columns], as.numeric)
-  #clean_df_copy$In.app.Purchases <- sapply(clean_df_copy$In.app.Purchases, function(x) as.numeric(x))
 
-clean_df_copy$Games <- lapply(clean_df_copy[,clean_df_copy$Games], as.factor)
-#clean_df_copy$Current.Version.Release.Date <- lapply(clean_df_copy$Current.Version.Release.Date, as.numeric)
-columns_to_categorical <- clean_df_copy[,clean_df_copy$Games: clean_df_copy$`Magazines & Newspapers`]
-categorical_columns <- which(column_types != 'numeric')
+#Dates to numeric
+library(lubridate)
+
+#Original.Release.Date to numeric
+date_components <- lapply(clean_df_copy$Original.Release.Date, function(date_str) unlist(strsplit(date_str, "-")))
+#Creating a function that takes each component of a date (Year, month and day), transforms them as numeric and then returns the entire date as numeric
+numeric_dates <- sapply(date_components, function(components) {
+  year <- as.numeric(components[1])
+  month <- as.numeric(components[2])
+  day <- as.numeric(components[3])
+  return(year * 10000 + month * 100 + day)
+})
+
+clean_df_copy$Original.Release.Date <- numeric_dates
+
+#Current.Version.Release.Date to numeric
+clean_df_copy$Current.Version.Release.Date <- as.character(clean_df_copy$Current.Version.Release.Date)
+
+date_components <- lapply(clean_df_copy$Current.Version.Release.Date, function(date_str) unlist(strsplit(date_str, "-")))
+
+numeric_dates <- sapply(date_components, function(components) {
+  year <- as.numeric(components[1])
+  month <- as.numeric(components[2])
+  day <- as.numeric(components[3])
+  return(year * 10000 + month * 100 + day)
+})
+
+
+clean_df_copy$Current.Version.Release.Date <- numeric_dates
+
+#Character values to categorical 
+categorical_columns <- which(column_types == 'character')
 categorical_columns
-clean_df_copy$Languages <- as.character(clean_df_copy$Languages)
-clean_df_copy$Languages <- strsplit(clean_df_copy$Languages, ",")
-clean_df_copy[, columns_to_categorical] <- lapply(clean_df_copy[, columns_to_categorical], as.factor)
+clean_df_copy[, categorical_columns] <- lapply(clean_df_copy[, categorical_columns], as.factor)
 
-#Yasin - I adjusted the following code to make it easier to understand
+#Game categories to categorical
+for (genres in unique_genres){
+  clean_df_copy[,genres]<-as.factor(clean_df_copy[,genres])
+}
+
+#Dropping lists
+clean_df_copy <- subset(clean_df_copy, select= -c(Languages,In.app.Purchases))
+
+#Double check
 column_types <- sapply(clean_df_copy, class)
-table(column_types) #the datatypes are all either numeric or categorical despite for the Current.Version.Release.Date
+table(column_types) 
 str(clean_df_copy)
+
 #Checking for duplicates 
 
 clean_df_copy_unique <- unique(clean_df_copy)
@@ -256,6 +292,10 @@ numeric_columns <- sapply(clean_df_copy_unique, is.numeric)
 #Scale numeric columns to the range [0, 1]
 clean_df_copy_unique[, numeric_columns] <- lapply(clean_df_copy_unique[, numeric_columns], function(x) {
   (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+})
+
+
+#### TASK 6 ####
 })
 
 
