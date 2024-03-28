@@ -1,6 +1,6 @@
 #Task 1: Importing
 library(readr)
-appstore_games <- read.csv("appstore_games.csv")
+appstore_games <- read.csv("Downloads/appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
 
 
@@ -100,7 +100,7 @@ for(y in 1:nrow(clean_df)){
 }
 
 #load the extra df
-load("genres_df.Rda") 
+load("Downloads/genres_df.Rda") 
 
 #create a table with totals for each ID 
 Genres_ID <- table(Genres_df$ID)
@@ -205,7 +205,7 @@ clean_df_copy <- clean_df_copy%>%
 #edian_rating
 #clean_df_copy$Categorical.Rating.Count <- ifelse(clean_df_copy$User.Rating.Count < median_rating, "Low", "High")
 #clean_df_copy <- clean_df_copy%>% 
-  #filter (!is.na(Categorical.Rating.Count))
+#filter (!is.na(Categorical.Rating.Count))
 
 #Checking for NA values 
 sum(apply(is.na(clean_df_copy[,1:76] ), 2, sum))
@@ -294,9 +294,20 @@ clean_df_copy_unique[, numeric_columns] <- lapply(clean_df_copy_unique[, numeric
   (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
 })
 
+#Repeat the same steps for data frames TrainingSet and TestSet
+numeric_columns_trainingSet <- sapply(trainingSet, is.numeric)
+
+trainingSet[, numeric_columns_trainingSet] <- lapply(trainingSet[, numeric_columns_trainingSet], function(x) {
+  (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+})
+
+numeric_columns_testSet <- sapply(testSet, is.numeric)
+
+testSet[, numeric_columns_testSet] <- lapply(testSet[, numeric_columns_testSet], function(x) {
+  (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+})
 
 #### TASK 6 ####
 })
 
 
-#### TASK 6 ####
