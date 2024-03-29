@@ -308,6 +308,94 @@ testSet[, numeric_columns_testSet] <- lapply(testSet[, numeric_columns_testSet],
 })
 
 #### TASK 6 ####
-})
+
+# PREP
+
+# remove Games and Strategy columns 
+# the values do not contribute to the outcome of the algorithms
+trainingSet$Games <- NULL
+trainingSet$Strategy <- NULL
+testSet$Games <- NULL
+testSet$Strategy <- NULL
+
+# Changing the df names to match the ML code
+training <- trainingSet
+testing <- testSet
+
+# Save the trainingSet dataframe
+save(trainingSet, file = "training.rda")
+
+# Save the testSet dataframe
+save(testSet, file = "testing.rda")
+
+# Installing required packages
+install.packages("e1071")
+install.packages("caret")
+
+library(caret)
+library(e1071)
+
+load("training.Rda")
+load("testing.Rda")
+
+
+
+#-------------------------------------------------------
+# START - TRAIN MODEL AND TEST
+
+#--------------------------#
+#       KNN Algorithm      #
+#--------------------------#
+
+model <- gknn(Categorical.Rating.Count ~ ., training, k = 5, method = "Manhattan")
+pred<-predict(model, testing)
+pred
+# Confusion Matrix
+# rows represent the actual categories in the testing set
+# columns represent the predictions
+# In a perfect prediction scenario, all values in the confusion matrix would be on the diagonal
+cm <- table(testing$Categorical.Rating.Count, pred)
+cm
+confusionMatrix(cm)
+
+#--------------------------#
+#   Naive Bayes Algorithm  #
+#--------------------------#
+
+model <- naiveBayes(Categorical.Rating.Count ~ ., data = training)
+model
+pred<-predict(model, testing)
+pred
+# Confusion Matrix
+# rows represent the actual categories in the testing set
+# columns represent the predictions
+# In a perfect prediction scenario, all values in the confusion matrix would be on the diagonal
+cm <- table(testing$Categorical.Rating.Count, pred)
+cm
+confusionMatrix(cm)
+
+#--------------------------#
+#       SVM Algorithm      #
+#--------------------------#
+
+model <- svm(Categorical.Rating.Count ~ ., data = training, kernel="linear")
+model <- svm(Categorical.Rating.Count ~ ., data = training, kernel="polynomial")
+model <- svm(Categorical.Rating.Count ~ ., data = training, kernel="sigmoid")
+model
+pred<-predict(model, testing)
+pred
+# Confusion Matrix
+# rows represent the actual categories in the testing set
+# columns represent the predictions
+# In a perfect prediction scenario, all values in the confusion matrix would be on the diagonal
+cm <- table(testing$Categorical.Rating.Count, pred)
+cm
+confusionMatrix(cm)
+
+# for some reason,the prediction wasn't made for all observations in the testing set
+# you can see it by running these lines
+length(pred)
+nrow(testing)
+
 
 
