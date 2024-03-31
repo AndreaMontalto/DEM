@@ -271,13 +271,12 @@ str(clean_df_copy)
 #Checking for duplicates 
 
 clean_df_copy_unique <- unique(clean_df_copy)
-
-sum(duplicated(clean_df_copy_unique))
+str(clean_df_copy_unique)
 
 #Re-calculating Dependend variable, to remove Missing Values 
 
-clean_df_copy$Categorical.Rating.Count <- ifelse(clean_df_copy$User.Rating.Count < median_rating, "Low", "High")
-table(clean_df_copy$Categorical.Rating.Count)
+clean_df_copy_unique$Categorical.Rating.Count <- ifelse(clean_df_copy_unique$User.Rating.Count < median_rating, "Low", "High")
+table(clean_df_copy_unique$Categorical.Rating.Count)
 
 #### TASK 4 ####
 #Splitting dataset into training and testing set 
@@ -413,7 +412,6 @@ confusionMatrix(cm)
 # you can see it by running these lines
 length(pred)
 (testing)
-
 
 
 
