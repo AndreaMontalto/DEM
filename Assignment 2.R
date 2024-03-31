@@ -1,6 +1,6 @@
 #Task 1: Importing
 library(readr)
-appstore_games <- read.csv("Downloads/appstore_games.csv")
+appstore_games <- read.csv("appstore_games.csv")
 appstore_games <- data.frame(appstore_games)
 
 
@@ -100,7 +100,7 @@ for(y in 1:nrow(clean_df)){
 }
 
 #load the extra df
-load("Downloads/genres_df.Rda") 
+load("genres_df.Rda") 
 
 #create a table with totals for each ID 
 Genres_ID <- table(Genres_df$ID)
@@ -224,7 +224,7 @@ clean_df_copy[, numeric_columns] <- lapply(clean_df_copy[, numeric_columns], as.
 library(lubridate)
 
 #Original.Release.Date to numeric
-date_components <- lapply(clean_df_copy$Original.Release.Date, function(date_str) unlist(strsplit(date_str, "-")))
+date_components <- lapply(clean_df_copy$Original.Release.Date, function(date_str) unlist(strsplit(date_str, "/")))
 #Creating a function that takes each component of a date (Year, month and day), transforms them as numeric and then returns the entire date as numeric
 numeric_dates <- sapply(date_components, function(components) {
   year <- as.numeric(components[1])
@@ -274,6 +274,11 @@ clean_df_copy_unique <- unique(clean_df_copy)
 
 sum(duplicated(clean_df_copy_unique))
 
+#Re-calculating Dependend variable, to remove Missing Values 
+
+clean_df_copy$Categorical.Rating.Count <- ifelse(clean_df_copy$User.Rating.Count < median_rating, "Low", "High")
+table(clean_df_copy$Categorical.Rating.Count)
+
 #### TASK 4 ####
 #Splitting dataset into training and testing set 
 install.packages('caTools')
@@ -317,6 +322,14 @@ trainingSet$Games <- NULL
 trainingSet$Strategy <- NULL
 testSet$Games <- NULL
 testSet$Strategy <- NULL
+testSet$`Sports & Activities` <- NULL
+trainingSet$`Sports & Activities` <- NULL
+testSet$`Comics & Cartoons` <- NULL
+trainingSet$`Comics & Cartoons` <- NULL
+testSet$`Animals & Nature` <- NULL
+trainingSet$`Animals & Nature` <- NULL
+testSet$`Places & Objects` <- NULL
+trainingSet$`Places & Objects` <- NULL
 
 # Changing the df names to match the ML code
 training <- trainingSet
@@ -331,7 +344,7 @@ save(testSet, file = "testing.rda")
 # Installing required packages
 install.packages("e1071")
 install.packages("caret")
-
+install.packages("recipes")
 library(caret)
 library(e1071)
 
@@ -357,6 +370,8 @@ pred
 cm <- table(testing$Categorical.Rating.Count, pred)
 cm
 confusionMatrix(cm)
+length(testing$Categorical.Rating.Count)
+length(pred)
 
 #--------------------------#
 #   Naive Bayes Algorithm  #
@@ -384,10 +399,12 @@ model <- svm(Categorical.Rating.Count ~ ., data = training, kernel="sigmoid")
 model
 pred<-predict(model, testing)
 pred
+
 # Confusion Matrix
 # rows represent the actual categories in the testing set
 # columns represent the predictions
 # In a perfect prediction scenario, all values in the confusion matrix would be on the diagonal
+
 cm <- table(testing$Categorical.Rating.Count, pred)
 cm
 confusionMatrix(cm)
@@ -395,7 +412,8 @@ confusionMatrix(cm)
 # for some reason,the prediction wasn't made for all observations in the testing set
 # you can see it by running these lines
 length(pred)
-nrow(testing)
+(testing)
+
 
 
 
