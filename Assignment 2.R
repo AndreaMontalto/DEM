@@ -297,8 +297,7 @@ testSet[, numeric_columns_testSet] <- lapply(testSet[, numeric_columns_testSet],
 
 # PREP
 
-# removing Games and Strategy columns 
-# the values do not contribute to the outcome of the algorithms
+# removing the values that do not contribute to the outcome of the algorithms
 trainingSet$Games <- NULL
 trainingSet$Strategy <- NULL
 testSet$Games <- NULL
