@@ -316,6 +316,10 @@ trainingSet$`Places & Objects` <- NULL
 training <- trainingSet
 testing <- testSet
 
+# Making sure that objective attribute is a factor
+training$Categorical.Rating.Count <- as.factor(training$Categorical.Rating.Count)
+testing$Categorical.Rating.Count <- as.factor(testing$Categorical.Rating.Count)
+
 # Save the trainingSet dataframe
 save(trainingSet, file = "training.rda")
 
