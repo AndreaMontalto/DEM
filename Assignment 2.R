@@ -392,3 +392,5 @@ pred
 cm <- table(testing$Categorical.Rating.Count, pred)
 cm
 confusionMatrix(cm)
+
+#complete and working code
